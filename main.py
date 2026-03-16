@@ -6,16 +6,6 @@ def update_game_state(secret_word: str,
                       guessed_letters: list[str],
                       guess: str,
                       lives: int) -> tuple[list[str], int]:
-    """Return updated guessed letters and lives after one guess.
-
-    Assumptions:
-    - Input validation is handled by the caller (single alphabetic character).
-    - Guesses are stored in lowercase for consistent duplicate checks.
-
-    Behavior:
-    - New wrong guesses decrement lives by 1, clamped at 0.
-    - Repeated guesses do not change lives.
-    """
     new_guessed_letters = guessed_letters.copy()
     new_lives = lives
     clean_guess = guess.lower()
@@ -45,10 +35,13 @@ def get_masked_word(secret_word: str, guessed_letters: list[str]) -> str:
     return " ".join(masked)
 
 
-def display_game_state(secret_word: str, guessed_letters: list[str], lives: int, time_limit: int):
+def display_game_state(secret_word: str, guessed_letters: list[str], lives: int, time_limit: int = None):
     print(f"\nWord: {get_masked_word(secret_word, guessed_letters)}")
     print(f"Guessed letters: {', '.join(guessed_letters)}")
-    print(f"Lives remaining: {lives} | You have {time_limit} seconds per guess!")
+    if time_limit:
+        print(f"Lives remaining: {lives} | You have {time_limit} seconds per guess!")
+    else:
+        print(f"Lives remaining: {lives} | AUTO PLAY MODE")
 
 
 def display_categories(categories: dict) -> str:
@@ -108,6 +101,36 @@ def play_single_game(category_words: list[str], starting_lives: int, time_limit:
     return 0
 
 
+def auto_play_single_game(category_words: list[str], starting_lives: int) -> int:
+    """this runs a single round where the computer plays against itself."""
+    secret_word = random.choice(category_words)
+    guessed_letters = []
+    lives = starting_lives
+    game_active = True
+
+    alphabet_pool = list("abcdefghijklmnopqrstuvwxyz")
+    random.shuffle(alphabet_pool)
+
+    while game_active:
+        display_game_state(secret_word, guessed_letters, lives)
+        time.sleep(1.5)
+
+        guess = alphabet_pool.pop()
+        print(f"\n---> Computer guesses: '{guess}'")
+        time.sleep(1)
+
+        guessed_letters, lives = update_game_state(secret_word, guessed_letters, guess, lives)
+
+        if is_game_won(secret_word, guessed_letters):
+            print(f"\nComputer Wins! It successfully guessed: {secret_word}")
+            game_active = False
+        elif lives == 0:
+            print(f"\nComputer Lost! It ran out of lives. The word was: {secret_word}")
+            game_active = False
+
+    return 0
+
+
 def main():
     word_database = {
         "Tech": ["python", "software", "developer", "algorithm"],
@@ -130,6 +153,25 @@ def main():
     while keep_playing:
         category_selected = False
         selected_cat = ""
+        mode_selected = False
+        is_auto_play = False
+        while not mode_selected:
+            print("\n--- MAIN MENU ---")
+            print("1. Play Game (Manual)")
+            print("2. Auto Play (Watch the Computer)")
+            mode_input = input("Select an option (1 or 2): ").strip()
+
+            if mode_input == '1':
+                is_auto_play = False
+                mode_selected = True
+            elif mode_input == '2':
+                is_auto_play = True
+                mode_selected = True
+            else:
+                print("Invalid input. Please enter 1 or 2.")
+
+        category_selected = False
+        selected_cat = ""
         while not category_selected:
             cat_input = input(display_categories(word_database)).strip().title()
             if cat_input in word_database:
@@ -150,23 +192,27 @@ def main():
 
         settings = difficulty_settings[selected_diff]
 
-        print(f"\nStarting game in category '{selected_cat}' on '{selected_diff.title()}' difficulty...")
-        round_score = play_single_game(
-            word_database[selected_cat],
-            settings["lives"],
-            settings["time"],
-            settings["multiplier"]
-        )
-
-        total_score += round_score
-        games_played += 1
+        # Route to correct mode
+        if is_auto_play:
+            print(f"\nStarting AUTO PLAY in category '{selected_cat}' on '{selected_diff.title()}' difficulty...")
+            auto_play_single_game(word_database[selected_cat], settings["lives"])
+        else:
+            print(f"\nStarting game in category '{selected_cat}' on '{selected_diff.title()}' difficulty...")
+            round_score = play_single_game(
+                word_database[selected_cat],
+                settings["lives"],
+                settings["time"],
+                settings["multiplier"]
+            )
+            total_score += round_score
+            games_played += 1
 
         print(f"\n--- SESSION STATS ---")
         print(f"Games Played: {games_played} | Total Score: {total_score}")
 
         valid_response = False
         while not valid_response:
-            replay = input("\nDo you want to play again? (y/n): ").strip().lower()
+            replay = input("\nDo you want to return to the main menu? (y/n): ").strip().lower()
             if replay == 'y':
                 valid_response = True
             elif replay == 'n':

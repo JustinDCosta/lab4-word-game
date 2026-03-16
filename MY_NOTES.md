@@ -90,3 +90,15 @@ Yes, the state transition map it provided was actually exactly what I needed to 
 - Added Difficulty settings (Easy, Medium, Hard) that scale lives and time limits.
 - Added a strict timer that automatically docks a life if the user takes too long to type.
 - Built a score system that tracks points across replays based on lives remaining and a speed bonus.
+
+# Auto Play MOde Assignment
+
+**Initial Thoughts:**
+- Okay, I need to add a menu right at the start asking if the user wants to play manually or watch the computer play. 
+- The computer has to make guesses on its own.
+- The one big rule: the computer can neverr guess the same letter twice.
+
+**MY Plan / Design Decisions:**
+- **Preventing repeats:** Instead of checking `if guess in guessed_letters` and looping until I find a new one, I'm just going to make a list of the alphabet, shuffle it, and `pop()` a letter off the end each turn. Easy, fast, and guarantees no duplicate guesses.
+- **Code structure:** I'm not going to mess with my `play_single_game` function because I don't want to break the timer or scoring stuff. I'll just duplicate it into a new `auto_play_single_game` function and strip out the input prompts.
+- **Pacing:** I need to import `time` and add `time.sleep(1)` between the computer's guesses. Otherwise, it will just instantly print the end of the game to the terminal and I won't be able to actually watch it play.
